@@ -2,34 +2,100 @@ import 'package:ai_ui_designer/agents/component_gen.dart';
 import 'package:ai_ui_designer/extensions/miscextensions.dart';
 import 'package:ai_ui_designer/extensions/textextensions.dart';
 import 'package:ai_ui_designer/home.dart';
-import 'package:ai_ui_designer/pages/ui_preview.dart';
 import 'package:ai_ui_designer/services/apidash_ai_service.dart';
+import 'package:dart_eval/dart_eval.dart';
+import 'package:dart_eval/dart_eval_bridge.dart';
+import 'package:dart_eval/stdlib/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_eval/flutter_eval.dart';
 
-class RespAnalyser extends StatefulWidget {
-  final String semanticAnalysis;
-  final String intermediateRepresentation;
-  const RespAnalyser({
+class UIPreviewer extends StatefulWidget {
+  final String generatedCode;
+  const UIPreviewer({
     super.key,
-    required this.semanticAnalysis,
-    required this.intermediateRepresentation,
+    required this.generatedCode,
   });
 
   @override
-  State<RespAnalyser> createState() => _RespAnalyserState();
+  State<UIPreviewer> createState() => _UIPreviewerState();
 }
 
-class _RespAnalyserState extends State<RespAnalyser> {
+class _UIPreviewerState extends State<UIPreviewer> {
+  TextEditingController modificationC = TextEditingController();
   double panelWidthRatio = 0.5;
   bool loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _compileAndRun(sampleCode, 'Sample Preview!');
+  }
+
+  Widget? previewWidget = SizedBox();
+
+  String sampleCode = '''
+    import 'package:flutter/material.dart';
+    
+    class PreviewWidget extends StatelessWidget {
+      final String text;
+      PreviewWidget(this.text);
+      
+      @override
+      Widget build(BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(16.0),
+          color: Colors.green,
+          child: Text(
+            text,
+            style: TextStyle(color: Colors.white, fontSize: 20),
+          ),
+        );
+      }
+    }
+  ''';
+
+  void _compileAndRun(String code, String argument) {
+    try {
+      // Step 1: Set up the compiler
+      final compiler = Compiler();
+      compiler.addPlugin(flutterEvalPlugin); // Add Flutter support
+
+      // Step 2: Compile the code
+      final program = compiler.compile({
+        'example': {
+          'main.dart': code,
+        }
+      });
+
+      // Step 3: Set up the runtime
+      final runtime = Runtime.ofProgram(program);
+      runtime.addPlugin(flutterEvalPlugin); // Enable Flutter widget execution
+
+      // Step 4: Execute the code and get the widget
+      final result = runtime.executeLib(
+        'package:example/main.dart',
+        'PreviewWidget.',
+        [$String(argument)], // Pass arguments to the constructor
+      ) as $Value;
+
+      setState(() {
+        previewWidget = result.$value as Widget;
+      });
+    } catch (e) {
+      setState(() {
+        previewWidget = null;
+        print('ERROR => $e');
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 6, 1, 36),
       appBar: AppBar(
-        title: Text('Semantic Analysis & Intermediate Representation'),
+        title: Text('UI Previewer & Modifier'),
       ),
       body: Column(
         children: [
@@ -37,31 +103,26 @@ class _RespAnalyserState extends State<RespAnalyser> {
             builder: (context, constraints) {
               return Row(
                 children: [
-                  /// Left Panel - Semantic Input
+                  /// Left Panel - UI Preview
                   Container(
                     width: constraints.maxWidth * panelWidthRatio,
                     padding: EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Semantic Analysis Output",
+                        Text("UI Preview",
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 16))
                             .color(Colors.white),
                         SizedBox(height: 10),
-                        Expanded(
-                          child: TextField(
-                            maxLines: null,
-                            expands: true,
-                            style: TextStyle(color: Colors.white),
-                            readOnly: true,
-                            controller: TextEditingController(
-                                text: widget.semanticAnalysis),
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(),
+                        Stack(
+                          children: [
+                            Container(
+                              color: Colors.grey,
+                              child: previewWidget,
                             ),
-                          ),
-                        ),
+                          ],
+                        ).expanded()
                       ],
                     ),
                   ),
@@ -83,7 +144,7 @@ class _RespAnalyserState extends State<RespAnalyser> {
                     ),
                   ),
 
-                  /// Right Panel - JSON Output
+                  /// Right Panel - Code
                   Container(
                     width: constraints.maxWidth * (1 - panelWidthRatio),
                     padding: EdgeInsets.all(16),
@@ -93,7 +154,7 @@ class _RespAnalyserState extends State<RespAnalyser> {
                         Row(
                           children: [
                             Text(
-                              "Intermediate Representation (JSON)",
+                              "Generated Code",
                               style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -103,8 +164,8 @@ class _RespAnalyserState extends State<RespAnalyser> {
                             IconButton(
                               icon: Icon(Icons.copy, color: Colors.white),
                               onPressed: () {
-                                Clipboard.setData(ClipboardData(
-                                    text: widget.intermediateRepresentation));
+                                Clipboard.setData(
+                                    ClipboardData(text: widget.generatedCode));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                         content: Text("Copied to clipboard!")));
@@ -122,7 +183,7 @@ class _RespAnalyserState extends State<RespAnalyser> {
                             ),
                             child: SingleChildScrollView(
                               child: SelectableText(
-                                widget.intermediateRepresentation,
+                                widget.generatedCode,
                                 style: TextStyle(
                                   color: Colors.greenAccent,
                                   fontFamily: "monospace",
@@ -138,42 +199,29 @@ class _RespAnalyserState extends State<RespAnalyser> {
               );
             },
           ).expanded(),
-          if (loading) ...[
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-            ).center().addUniformMargin(20)
-          ] else ...[
-            Container(
-              height: 80,
-              child: ElevatedButton(
-                onPressed: process,
-                child: Text("PROCEED TO UI GENERATION"),
-              ).addUniformMargin(20),
+          TextField(
+            controller: modificationC,
+            maxLines: 5,
+            keyboardType: TextInputType.multiline,
+            textAlign: TextAlign.start,
+            textAlignVertical: TextAlignVertical.top,
+            style: TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'Enter any modifications you want...',
             ),
-          ],
+          ).addHorizontalMargin(20),
+          Container(
+            height: 80,
+            child: ElevatedButton(
+              onPressed: () {},
+              child: Text("MODIFY UI"),
+            ).addUniformMargin(20),
+          ),
         ],
       ),
     );
   }
 
-  process() async {
-    setState(() {
-      loading = true;
-    });
-    final responseSemanticAnalyserBot = ComponentGenBot();
-    final ans = await APIDashAIService.callAgent(
-      responseSemanticAnalyserBot,
-      "SEMANTIC ANALYSIS: ```${widget.semanticAnalysis}```\n\nINTERMEDIATE REPRESENTATION: ```${widget.intermediateRepresentation}```",
-    );
-    setState(() {
-      loading = false;
-    });
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => UIPreviewer(
-          generatedCode: ans['COMPONENT_CODE'],
-        ),
-      ),
-    );
-  }
+  process() async {}
 }

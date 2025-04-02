@@ -34,6 +34,8 @@ dependencies:
   # ollama: ^1.0.4
   ollama_dart: ^0.2.2+1
   http:
+  dart_eval: ^0.7.10
+  flutter_eval: ^0.7.6
 
 
   # The following adds the Cupertino Icons font to your application.
