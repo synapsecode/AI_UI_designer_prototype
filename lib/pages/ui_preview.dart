@@ -1,4 +1,5 @@
 import 'package:ai_ui_designer/agents/component_gen.dart';
+import 'package:ai_ui_designer/agents/component_modifier.dart';
 import 'package:ai_ui_designer/extensions/miscextensions.dart';
 import 'package:ai_ui_designer/extensions/textextensions.dart';
 import 'package:ai_ui_designer/home.dart';
@@ -26,9 +27,12 @@ class _UIPreviewerState extends State<UIPreviewer> {
   double panelWidthRatio = 0.5;
   bool loading = false;
 
+  String generatedCode = "";
+
   @override
   void initState() {
     super.initState();
+    generatedCode = widget.generatedCode;
     _compileAndRun(sampleCode, 'Sample Preview!');
   }
 
@@ -183,7 +187,7 @@ class _UIPreviewerState extends State<UIPreviewer> {
                             ),
                             child: SingleChildScrollView(
                               child: SelectableText(
-                                widget.generatedCode,
+                                generatedCode,
                                 style: TextStyle(
                                   color: Colors.greenAccent,
                                   fontFamily: "monospace",
@@ -211,17 +215,39 @@ class _UIPreviewerState extends State<UIPreviewer> {
               hintText: 'Enter any modifications you want...',
             ),
           ).addHorizontalMargin(20),
-          Container(
-            height: 80,
-            child: ElevatedButton(
-              onPressed: () {},
-              child: Text("MODIFY UI"),
-            ).addUniformMargin(20),
-          ),
+          if (loading) ...[
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+            ).center().addUniformMargin(20)
+          ] else ...[
+            Container(
+              height: 80,
+              child: ElevatedButton(
+                onPressed: process,
+                child: Text("MODIFY UI"),
+              ).addUniformMargin(20),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  process() async {}
+  process() async {
+    setState(() {
+      loading = true;
+    });
+    final componentModifierBot = ComponentModifierBot();
+    final ans = await APIDashAIService.callAgent(
+      componentModifierBot,
+      "ORIGINAL CODE: ```${widget.generatedCode}```\n\nMODIFICATIONS REQUESTED: ```${modificationC.value.text}```",
+    );
+    setState(() {
+      loading = false;
+    });
+    setState(() {
+      generatedCode = ans['MODIFIED_CODE'];
+      _compileAndRun(sampleCode, 'Modified Preview!');
+    });
+  }
 }

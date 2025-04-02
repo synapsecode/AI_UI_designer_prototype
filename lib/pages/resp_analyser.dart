@@ -160,9 +160,9 @@ class _RespAnalyserState extends State<RespAnalyser> {
     setState(() {
       loading = true;
     });
-    final responseSemanticAnalyserBot = ComponentGenBot();
+    final componentGenBot = ComponentGenBot();
     final ans = await APIDashAIService.callAgent(
-      responseSemanticAnalyserBot,
+      componentGenBot,
       "SEMANTIC ANALYSIS: ```${widget.semanticAnalysis}```\n\nINTERMEDIATE REPRESENTATION: ```${widget.intermediateRepresentation}```",
     );
     setState(() {
