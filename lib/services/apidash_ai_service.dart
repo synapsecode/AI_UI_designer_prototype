@@ -1,95 +1,70 @@
-import 'dart:convert';
 import 'package:ai_ui_designer/services/agent_blueprint.dart';
-import 'package:http/http.dart' as http;
-import 'package:ollama_dart/ollama_dart.dart';
+import 'package:ai_ui_designer/services/llm_services.dart';
 
 enum LLMProvider { chatgpt, claude, gemini }
 
+typedef TCustomAPIKEY = (LLMProvider provider, String key);
+
 class APIDashAIService {
-  static Future<(LLMProvider provider, String key)?>
-      getUserCustomAPIKey() async {
-    return (LLMProvider.gemini, '...');
+  static Future<TCustomAPIKEY?> _getUserCustomAPIKey() async {
+    return null;
+    // return (LLMProvider.gemini, '...');
   }
 
-  static Future<String?> call_ollama({
+  static Future<String?> _call_ollama({
     required String systemPrompt,
     required String input,
   }) async {
-    String ollamaInput = "$systemPrompt\\nInput:$input";
-    final client = OllamaClient();
-    final generated = await client.generateCompletion(
-      request: GenerateCompletionRequest(
-        model: 'llama3',
-        prompt: ollamaInput,
-      ),
-    );
-    return generated.response;
+    return await APIDashOllamaService.ollama(systemPrompt, input);
   }
 
-  static Future<String?> call_provider({
+  static Future<String?> _call_provider({
     required LLMProvider provider,
     required String apiKey,
     required String systemPrompt,
     required String input,
   }) async {
-    String combinedInput = "$systemPrompt\\nInput:$input";
     switch (provider) {
       case LLMProvider.gemini:
-        {
-          final url = Uri.parse(
-              'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey');
-          final response = await http.post(
-            url,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'contents': [
-                {
-                  "parts": [
-                    {"text": combinedInput}
-                  ]
-                }
-              ]
-            }),
-          );
-          if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
-            return data['candidates']?[0]?['content']?['parts']?[0]?['text'];
-          } else {
-            print("GEMINI_ERROR: ${response.statusCode}");
-            return null;
-          }
-        }
-      //Similar Implementations for other Providers
+        return await APIDashCustomLLMService.gemini(
+            systemPrompt, input, apiKey);
+      case LLMProvider.chatgpt:
+        return await APIDashCustomLLMService.chatgpt(
+            systemPrompt, input, apiKey);
+      case LLMProvider.claude:
+        return await APIDashCustomLLMService.claude(
+            systemPrompt, input, apiKey);
       default:
+        print('PROVIDER_UNIMPLEMENTED');
         return null;
     }
   }
 
-  static Future<String?> orchestrator(APIDashAIAgent agent) async {
+  static Future<String?> _orchestrator(
+      APIDashAIAgent agent, String input) async {
     final sP = agent.getSystemPrompt();
-    final iP = await agent.getInput();
-    final customKey = await getUserCustomAPIKey();
+    final customKey = await _getUserCustomAPIKey();
     //Implement any Rate limiting logic as needed
     if (customKey == null) {
       //Use local ollama implementation
-      return await call_ollama(systemPrompt: sP, input: iP);
+      return await _call_ollama(systemPrompt: sP, input: input);
     } else {
       //Use LLMProvider implementation
-      return await call_provider(
+      return await _call_provider(
         provider: customKey.$1,
         apiKey: customKey.$2,
         systemPrompt: sP,
-        input: iP,
+        input: input,
       );
     }
   }
 
-  static Future<dynamic> governor(APIDashAIAgent agent) async {
+  static Future<dynamic> _governor(APIDashAIAgent agent, String input) async {
     int RETRY_COUNT = 0;
     List<int> backoffDelays = [200, 400, 800, 1600, 3200];
     do {
       try {
-        final res = await orchestrator(agent);
+        final res = await _orchestrator(agent, input);
         if (res == null) {
           RETRY_COUNT += 1;
         } else {
@@ -112,7 +87,7 @@ class APIDashAIService {
     } while (RETRY_COUNT < 5);
   }
 
-  static startAgent(APIDashAIAgent agent) async {
-    return await governor(agent);
+  static Future<dynamic> callAgent(APIDashAIAgent agent, String input) async {
+    return await _governor(agent, input);
   }
 }
