@@ -1,14 +1,16 @@
+import 'package:ai_ui_designer/home.dart';
 import 'package:ai_ui_designer/services/agent_blueprint.dart';
 import 'package:ai_ui_designer/services/llm_services.dart';
 
-enum LLMProvider { chatgpt, claude, gemini }
+enum LLMProvider { chatgpt, claude, gemini, openai_azure }
 
 typedef TCustomAPIKEY = (LLMProvider provider, String key);
 
 class APIDashAIService {
   static Future<TCustomAPIKEY?> _getUserCustomAPIKey() async {
-    // return null;
-    return (LLMProvider.gemini, 'AIzaSyAVjGRUqFo_nIZvQsgsx-aMiqjw4muSUKM');
+    if (LLMKeyStore.API_KEY == null) return null;
+    if (LLMKeyStore.provider == null) return null;
+    return (LLMKeyStore.provider!, LLMKeyStore.API_KEY!);
   }
 
   static Future<String?> _call_ollama({
@@ -34,6 +36,12 @@ class APIDashAIService {
       case LLMProvider.claude:
         return await APIDashCustomLLMService.claude(
             systemPrompt, input, apiKey);
+      case LLMProvider.openai_azure:
+        return await APIDashCustomLLMService.openai_azure(
+          systemPrompt,
+          input,
+          apiKey,
+        );
       default:
         print('PROVIDER_UNIMPLEMENTED');
         return null;

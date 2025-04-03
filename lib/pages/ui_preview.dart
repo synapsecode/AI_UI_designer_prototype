@@ -239,7 +239,7 @@ class _UIPreviewerState extends State<UIPreviewer> {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({'code': base64.encode(generatedCode.codeUnits)}),
+      body: jsonEncode({'code': base64.encode(utf8.encode(generatedCode))}),
     );
     setState(() {
       buildingUI = false;
@@ -259,10 +259,6 @@ class _UIPreviewerState extends State<UIPreviewer> {
   }
 
   process() async {
-    // setState(() {
-    //   webViewKey = Random().nextInt(499999999).toString();
-    // });
-    // return;
     setState(() {
       loading = true;
     });

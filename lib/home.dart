@@ -6,6 +6,11 @@ import 'package:ai_ui_designer/pages/resp_analyser.dart';
 import 'package:ai_ui_designer/services/apidash_ai_service.dart';
 import 'package:flutter/material.dart';
 
+class LLMKeyStore {
+  static String? API_KEY;
+  static LLMProvider? provider;
+}
+
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
 
@@ -17,8 +22,6 @@ class _HomepageState extends State<Homepage> {
   final TextEditingController _jsonController = TextEditingController();
 
   bool useLLMProvider = true;
-  String apiKey = "";
-  LLMProvider selectedProvider = LLMProvider.gemini;
 
   bool loading = false;
 
@@ -39,6 +42,11 @@ class _HomepageState extends State<Homepage> {
                   setState(() {
                     useLLMProvider = value!;
                   });
+                  if (!useLLMProvider) {
+                    print("Resetting LLMKeyStore");
+                    LLMKeyStore.API_KEY = null;
+                    LLMKeyStore.provider = null;
+                  }
                 },
               ),
               Text("Use Custom LLM Provider instead of ollama")
@@ -46,36 +54,43 @@ class _HomepageState extends State<Homepage> {
             ],
           ),
           if (useLLMProvider) ...[
-            SizedBox(height: 16),
-            TextField(
-              onChanged: (value) => setState(() => apiKey = value),
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: "Enter your API key",
+            Container(
+              height: 100,
+              child: Row(
+                children: [
+                  DropdownButton<LLMProvider>(
+                    value: LLMKeyStore.provider,
+                    isExpanded: true,
+                    onChanged: (LLMProvider? newValue) {
+                      setState(() {
+                        LLMKeyStore.provider = newValue!;
+                      });
+                    },
+                    dropdownColor: const Color.fromARGB(255, 12, 1, 23),
+                    items: LLMProvider.values.map((LLMProvider provider) {
+                      return DropdownMenuItem<LLMProvider>(
+                        value: provider,
+                        child: Text(provider.name.toUpperCase())
+                            .color(Colors.white),
+                      );
+                    }).toList(),
+                  ).expanded(flex: 1),
+                  SizedBox(width: 10),
+                  TextField(
+                    onChanged: (value) => setState(() {
+                      LLMKeyStore.API_KEY = value;
+                    }),
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: "Enter your API key",
+                    ),
+                  ).expanded(flex: 7),
+                ],
               ),
             ),
-            SizedBox(height: 16),
 
             /// Dropdown to select LLM Provider
-            Text("Select LLM Provider",
-                    style: TextStyle(fontWeight: FontWeight.bold))
-                .color(Colors.white),
-            DropdownButton<LLMProvider>(
-              value: selectedProvider,
-              isExpanded: true,
-              onChanged: (LLMProvider? newValue) {
-                setState(() {
-                  selectedProvider = newValue!;
-                });
-              },
-              dropdownColor: const Color.fromARGB(255, 12, 1, 23),
-              items: LLMProvider.values.map((LLMProvider provider) {
-                return DropdownMenuItem<LLMProvider>(
-                  value: provider,
-                  child: Text(provider.name.toUpperCase()).color(Colors.white),
-                );
-              }).toList(),
-            ),
           ],
           SizedBox(height: 16),
           Expanded(

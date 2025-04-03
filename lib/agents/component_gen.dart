@@ -21,9 +21,6 @@ SEMANTIC_ANALYSIS: ```plaintext
 
 Use all of this data to create a nice and good looking flutter component. 
 
-IMPORTANT POINTS TO NOTE:
-1. Do NOT USE ANY NON-STANDARD PACKAGE IMPORTS, STICK TO THE STANDARD LIBRARY OF DART
-
 OUTPUT FORMAT:
 Since this code needs to be executed in the next step of the pipeline we need to add a Runner stub
 For example, If you have generated a Widget named Test that accepts a Map as input then your output should be something like:
@@ -40,12 +37,13 @@ class Runner extends StatelessWidget {
   }
 }
 ```
-play around with variable names and stuff as needed but note that the Raw API Response must be passed as is to the target component
+The Raw API Response must be passed as is to the target component
 This is done so that it can be executed in the next step
 
 OUTPUT RULES:
 1. ALWAYS OUTPUT VALID & EXECUTABLE CODE ONLY
 2. Do NOT INCLUDE ANY LEADING OR TRAILING TEXT. OUTPUT THE FLUTTER CODE ONLY enclosed in triple backticks(```)
+3. DO NOT INCLUDE ANY flutter packages
 """;
 
 class ComponentGenBot extends APIDashAIAgent {
@@ -59,6 +57,12 @@ class ComponentGenBot extends APIDashAIAgent {
 
   @override
   Future<bool> validator(String aiResponse) async {
+    /*Potential Rules:
+    - Leading & Trailing Text
+    - Multiple Imports
+    - Incorrect Runner formatting & more
+    */
+
     //Add any specific validations here as needed
     return true;
   }

@@ -80,5 +80,52 @@ class APIDashCustomLLMService {
     return null;
   }
 
+  static Future<String?> openai_azure(
+    String systemPrompt,
+    String input,
+    String credential,
+  ) async {
+    //KEY_FORMAT: domain|modelname|apiv|key
+
+    final credParts = credential.split('|');
+    final domain = credParts[0];
+    final modelname = credParts[1];
+    final apiversion = credParts[2];
+    final apiKey = credParts[3];
+
+    final String apiUrl =
+        "https://$domain.openai.azure.com/openai/deployments/$modelname/chat/completions?api-version=$apiversion";
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": apiKey,
+        },
+        body: jsonEncode({
+          "messages": [
+            {"role": "system", "content": systemPrompt},
+            if (input.isNotEmpty)
+              {"role": "user", "content": input}
+            else
+              {"role": "user", "content": "Generate"}
+          ],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return data["choices"]?[0]["message"]?["content"]?.trim();
+      } else {
+        print("Error: ${response.statusCode} - ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("Exception: $e");
+      return null;
+    }
+  }
+
   //Other Custom LLM Solutions
 }
