@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:ai_ui_designer/agents/component_gen.dart';
 import 'package:ai_ui_designer/agents/component_modifier.dart';
 import 'package:ai_ui_designer/extensions/miscextensions.dart';
@@ -10,6 +13,8 @@ import 'package:dart_eval/stdlib/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_eval/flutter_eval.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:http/http.dart' as http;
 
 class UIPreviewer extends StatefulWidget {
   final String generatedCode;
@@ -26,13 +31,19 @@ class _UIPreviewerState extends State<UIPreviewer> {
   TextEditingController modificationC = TextEditingController();
   double panelWidthRatio = 0.5;
   bool loading = false;
+  bool buildingUI = false;
 
   String generatedCode = "";
+
+  String webViewKey = 'INITIAL';
 
   @override
   void initState() {
     super.initState();
     generatedCode = widget.generatedCode;
+    Future.delayed(Duration(milliseconds: 200), () {
+      buildUI();
+    });
   }
 
   @override
@@ -61,7 +72,43 @@ class _UIPreviewerState extends State<UIPreviewer> {
                             .color(Colors.white),
                         SizedBox(height: 10),
                         Stack(
-                          children: [],
+                          children: [
+                            if (buildingUI) ...[
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.amber),
+                                  ).center().addUniformMargin(20),
+                                  Text('Re-Building UI').color(Colors.white54)
+                                ],
+                              ).center()
+                            ] else ...[
+                              InAppWebView(
+                                key: ValueKey(webViewKey),
+                                initialUrlRequest: URLRequest(
+                                  url: WebUri.uri(
+                                    Uri.parse(
+                                      'http://127.0.0.1:5152/?_=${DateTime.now().millisecondsSinceEpoch}',
+                                    ),
+                                  ),
+                                  cachePolicy: URLRequestCachePolicy
+                                      .RELOAD_IGNORING_LOCAL_CACHE_DATA,
+                                  headers: {
+                                    "Cache-Control":
+                                        "no-cache, no-store, must-revalidate",
+                                    "Pragma": "no-cache",
+                                    "Expires": "0"
+                                  },
+                                ),
+                                initialSettings: InAppWebViewSettings(
+                                  cacheEnabled: false,
+                                  clearCache: true,
+                                ),
+                              )
+                            ],
+                          ],
                         ).expanded()
                       ],
                     ),
@@ -114,24 +161,37 @@ class _UIPreviewerState extends State<UIPreviewer> {
                           ],
                         ),
                         SizedBox(height: 10),
-                        Expanded(
-                          child: Container(
-                            padding: EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: const Color.fromARGB(155, 34, 34, 34),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: SingleChildScrollView(
-                              child: SelectableText(
-                                generatedCode,
-                                style: TextStyle(
-                                  color: Colors.greenAccent,
-                                  fontFamily: "monospace",
-                                ),
-                              ).limitSize(double.infinity),
+                        if (loading) ...[
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.amber),
+                              ).center().addUniformMargin(20),
+                              Text('Re-Generating Code').color(Colors.white54)
+                            ],
+                          ).center().expanded()
+                        ] else ...[
+                          Expanded(
+                            child: Container(
+                              padding: EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color.fromARGB(155, 34, 34, 34),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: SingleChildScrollView(
+                                child: SelectableText(
+                                  generatedCode,
+                                  style: TextStyle(
+                                    color: Colors.greenAccent,
+                                    fontFamily: "monospace",
+                                  ),
+                                ).limitSize(double.infinity),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ).expanded(),
@@ -169,7 +229,40 @@ class _UIPreviewerState extends State<UIPreviewer> {
     );
   }
 
+  buildUI() async {
+    setState(() {
+      buildingUI = true;
+    });
+
+    final res = await http.post(
+      Uri.parse('http://127.0.0.1:5152/build'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'code': base64.encode(generatedCode.codeUnits)}),
+    );
+    setState(() {
+      buildingUI = false;
+    });
+    if (res.statusCode == 200) {
+      Future.delayed(Duration(milliseconds: 400), () {
+        for (int i = 0; i < 5; i++) {
+          setState(() {
+            webViewKey = Random().nextInt(499999999).toString();
+          });
+        }
+      });
+    } else {
+      print("BUILD_FAILED");
+      return;
+    }
+  }
+
   process() async {
+    // setState(() {
+    //   webViewKey = Random().nextInt(499999999).toString();
+    // });
+    // return;
     setState(() {
       loading = true;
     });
@@ -185,20 +278,22 @@ class _UIPreviewerState extends State<UIPreviewer> {
     setState(() {
       generatedCode = ans['MODIFIED_CODE'];
     });
+    Future.delayed(Duration(milliseconds: 100), () {
+      buildUI();
+    });
   }
 }
-
 
 // class FlutterEvalPreviewer {
 //   static Widget? previewWidget = SizedBox();
 
 //   static String sampleCode = '''
 //     import 'package:flutter/material.dart';
-    
+
 //     class PreviewWidget extends StatelessWidget {
 //       final String text;
 //       PreviewWidget(this.text);
-      
+
 //       @override
 //       Widget build(BuildContext context) {
 //         return Container(

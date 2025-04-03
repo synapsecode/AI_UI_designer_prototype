@@ -59,6 +59,10 @@ class IntermediateRepresentationGen extends APIDashAIAgent {
 
   @override
   Future outputFormatter(String validatedResponse) async {
+    validatedResponse = validatedResponse
+        .replaceAll('```json', '')
+        .replaceAll('```json\n', '')
+        .replaceAll('```', '');
     return {
       'INTERMEDIATE_REPRESENTATION': validatedResponse,
     };
