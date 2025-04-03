@@ -1,19 +1,13 @@
 import 'dart:convert';
 import 'dart:math';
-
 import 'package:ai_ui_designer/agents/component_gen.dart';
 import 'package:ai_ui_designer/agents/component_modifier.dart';
 import 'package:ai_ui_designer/extensions/miscextensions.dart';
 import 'package:ai_ui_designer/extensions/textextensions.dart';
 import 'package:ai_ui_designer/home.dart';
 import 'package:ai_ui_designer/services/apidash_ai_service.dart';
-import 'package:dart_eval/dart_eval.dart';
-import 'package:dart_eval/dart_eval_bridge.dart';
-import 'package:dart_eval/stdlib/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_eval/flutter_eval.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:http/http.dart' as http;
 
 class UIPreviewer extends StatefulWidget {
@@ -84,30 +78,8 @@ class _UIPreviewerState extends State<UIPreviewer> {
                                   Text('Re-Building UI').color(Colors.white54)
                                 ],
                               ).center()
-                            ] else ...[
-                              InAppWebView(
-                                key: ValueKey(webViewKey),
-                                initialUrlRequest: URLRequest(
-                                  url: WebUri.uri(
-                                    Uri.parse(
-                                      'http://127.0.0.1:5152/?_=${DateTime.now().millisecondsSinceEpoch}',
-                                    ),
-                                  ),
-                                  cachePolicy: URLRequestCachePolicy
-                                      .RELOAD_IGNORING_LOCAL_CACHE_DATA,
-                                  headers: {
-                                    "Cache-Control":
-                                        "no-cache, no-store, must-revalidate",
-                                    "Pragma": "no-cache",
-                                    "Expires": "0"
-                                  },
-                                ),
-                                initialSettings: InAppWebViewSettings(
-                                  cacheEnabled: false,
-                                  clearCache: true,
-                                ),
-                              )
-                            ],
+                            ] else
+                              ...[],
                           ],
                         ).expanded()
                       ],
@@ -279,56 +251,3 @@ class _UIPreviewerState extends State<UIPreviewer> {
     });
   }
 }
-
-// class FlutterEvalPreviewer {
-//   static Widget? previewWidget = SizedBox();
-
-//   static String sampleCode = '''
-//     import 'package:flutter/material.dart';
-
-//     class PreviewWidget extends StatelessWidget {
-//       final String text;
-//       PreviewWidget(this.text);
-
-//       @override
-//       Widget build(BuildContext context) {
-//         return Container(
-//           padding: EdgeInsets.all(16.0),
-//           color: Colors.green,
-//           child: Text("HI"),
-//         );
-//       }
-//     }
-//   ''';
-
-//   static void compileAndRenderWidget(String code, String argument) {
-//     try {
-//       // Step 1: Set up the compiler
-//       final compiler = Compiler();
-//       compiler.addPlugin(flutterEvalPlugin); // Add Flutter support
-
-//       // Step 2: Compile the code
-//       final program = compiler.compile({
-//         'example': {
-//           'main.dart': code,
-//         }
-//       });
-
-//       // Step 3: Set up the runtime
-//       final runtime = Runtime.ofProgram(program);
-//       runtime.addPlugin(flutterEvalPlugin); // Enable Flutter widget execution
-
-//       // Step 4: Execute the code and get the widget
-//       final result = runtime.executeLib(
-//         'package:example/main.dart',
-//         'PreviewWidget.',
-//         [$String(argument)], // Pass arguments to the constructor
-//       ) as $Value;
-
-//       previewWidget = result.$value as Widget;
-//     } catch (e) {
-//       previewWidget = null;
-//       print('ERROR => $e');
-//     }
-//   }
-// }
