@@ -7,8 +7,8 @@ typedef TCustomAPIKEY = (LLMProvider provider, String key);
 
 class APIDashAIService {
   static Future<TCustomAPIKEY?> _getUserCustomAPIKey() async {
-    return null;
-    // return (LLMProvider.gemini, '...');
+    // return null;
+    return (LLMProvider.gemini, 'AIzaSyAVjGRUqFo_nIZvQsgsx-aMiqjw4muSUKM');
   }
 
   static Future<String?> _call_ollama({
@@ -41,30 +41,49 @@ class APIDashAIService {
   }
 
   static Future<String?> _orchestrator(
-      APIDashAIAgent agent, String input) async {
-    final sP = agent.getSystemPrompt();
+    APIDashAIAgent agent, {
+    String? query,
+    Map? variables,
+  }) async {
+    String sP = agent.getSystemPrompt();
+
+    //Perform Templating
+    if (variables != null) {
+      for (final v in variables.keys) {
+        sP = sP.substitutePromptVariable(v, variables[v]);
+      }
+    }
+
     final customKey = await _getUserCustomAPIKey();
     //Implement any Rate limiting logic as needed
     if (customKey == null) {
       //Use local ollama implementation
-      return await _call_ollama(systemPrompt: sP, input: input);
+      return await _call_ollama(systemPrompt: sP, input: query ?? '');
     } else {
       //Use LLMProvider implementation
       return await _call_provider(
         provider: customKey.$1,
         apiKey: customKey.$2,
         systemPrompt: sP,
-        input: input,
+        input: query ?? '',
       );
     }
   }
 
-  static Future<dynamic> _governor(APIDashAIAgent agent, String input) async {
+  static Future<dynamic> _governor(
+    APIDashAIAgent agent, {
+    String? query,
+    Map? variables,
+  }) async {
     int RETRY_COUNT = 0;
     List<int> backoffDelays = [200, 400, 800, 1600, 3200];
     do {
       try {
-        final res = await _orchestrator(agent, input);
+        final res = await _orchestrator(
+          agent,
+          query: query,
+          variables: variables,
+        );
         if (res == null) {
           RETRY_COUNT += 1;
         } else {
@@ -87,7 +106,11 @@ class APIDashAIService {
     } while (RETRY_COUNT < 5);
   }
 
-  static Future<dynamic> callAgent(APIDashAIAgent agent, String input) async {
-    return await _governor(agent, input);
+  static Future<dynamic> callAgent(
+    APIDashAIAgent agent, {
+    String? query,
+    Map? variables,
+  }) async {
+    return await _governor(agent, query: query, variables: variables);
   }
 }

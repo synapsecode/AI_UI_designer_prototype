@@ -17,12 +17,12 @@ class APIDashOllamaService {
       return null;
     }
 
-    String ollamaInput = "$systemPrompt\\nInput:$input";
+    final inpS = input == '' ? '' : '\nProvided Inputs:$input';
     final client = OllamaClient();
     final generated = await client.generateCompletion(
       request: GenerateCompletionRequest(
         model: model,
-        prompt: ollamaInput,
+        prompt: "$systemPrompt$inpS",
       ),
     );
     return generated.response;
@@ -36,7 +36,8 @@ class APIDashCustomLLMService {
     String input,
     String apiKey,
   ) async {
-    String combinedInput = "$systemPrompt\\nInput:$input";
+    final inpS = input == '' ? '' : '\nProvided Inputs:$input';
+    String combinedInput = "$systemPrompt$inpS";
     final url = Uri.parse(
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey');
     final response = await http.post(

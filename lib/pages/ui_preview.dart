@@ -33,65 +33,6 @@ class _UIPreviewerState extends State<UIPreviewer> {
   void initState() {
     super.initState();
     generatedCode = widget.generatedCode;
-    _compileAndRun(sampleCode, 'Sample Preview!');
-  }
-
-  Widget? previewWidget = SizedBox();
-
-  String sampleCode = '''
-    import 'package:flutter/material.dart';
-    
-    class PreviewWidget extends StatelessWidget {
-      final String text;
-      PreviewWidget(this.text);
-      
-      @override
-      Widget build(BuildContext context) {
-        return Container(
-          padding: EdgeInsets.all(16.0),
-          color: Colors.green,
-          child: Text(
-            text,
-            style: TextStyle(color: Colors.white, fontSize: 20),
-          ),
-        );
-      }
-    }
-  ''';
-
-  void _compileAndRun(String code, String argument) {
-    try {
-      // Step 1: Set up the compiler
-      final compiler = Compiler();
-      compiler.addPlugin(flutterEvalPlugin); // Add Flutter support
-
-      // Step 2: Compile the code
-      final program = compiler.compile({
-        'example': {
-          'main.dart': code,
-        }
-      });
-
-      // Step 3: Set up the runtime
-      final runtime = Runtime.ofProgram(program);
-      runtime.addPlugin(flutterEvalPlugin); // Enable Flutter widget execution
-
-      // Step 4: Execute the code and get the widget
-      final result = runtime.executeLib(
-        'package:example/main.dart',
-        'PreviewWidget.',
-        [$String(argument)], // Pass arguments to the constructor
-      ) as $Value;
-
-      setState(() {
-        previewWidget = result.$value as Widget;
-      });
-    } catch (e) {
-      setState(() {
-        previewWidget = null;
-        print('ERROR => $e');
-      });
-    }
   }
 
   @override
@@ -120,12 +61,7 @@ class _UIPreviewerState extends State<UIPreviewer> {
                             .color(Colors.white),
                         SizedBox(height: 10),
                         Stack(
-                          children: [
-                            Container(
-                              color: Colors.grey,
-                              child: previewWidget,
-                            ),
-                          ],
+                          children: [],
                         ).expanded()
                       ],
                     ),
@@ -240,14 +176,68 @@ class _UIPreviewerState extends State<UIPreviewer> {
     final componentModifierBot = ComponentModifierBot();
     final ans = await APIDashAIService.callAgent(
       componentModifierBot,
-      "ORIGINAL CODE: ```${widget.generatedCode}```\n\nMODIFICATIONS REQUESTED: ```${modificationC.value.text}```",
+      query:
+          "ORIGINAL CODE: ```${widget.generatedCode}```\n\nMODIFICATIONS REQUESTED: ```${modificationC.value.text}```",
     );
     setState(() {
       loading = false;
     });
     setState(() {
       generatedCode = ans['MODIFIED_CODE'];
-      _compileAndRun(sampleCode, 'Modified Preview!');
     });
   }
 }
+
+
+// class FlutterEvalPreviewer {
+//   static Widget? previewWidget = SizedBox();
+
+//   static String sampleCode = '''
+//     import 'package:flutter/material.dart';
+    
+//     class PreviewWidget extends StatelessWidget {
+//       final String text;
+//       PreviewWidget(this.text);
+      
+//       @override
+//       Widget build(BuildContext context) {
+//         return Container(
+//           padding: EdgeInsets.all(16.0),
+//           color: Colors.green,
+//           child: Text("HI"),
+//         );
+//       }
+//     }
+//   ''';
+
+//   static void compileAndRenderWidget(String code, String argument) {
+//     try {
+//       // Step 1: Set up the compiler
+//       final compiler = Compiler();
+//       compiler.addPlugin(flutterEvalPlugin); // Add Flutter support
+
+//       // Step 2: Compile the code
+//       final program = compiler.compile({
+//         'example': {
+//           'main.dart': code,
+//         }
+//       });
+
+//       // Step 3: Set up the runtime
+//       final runtime = Runtime.ofProgram(program);
+//       runtime.addPlugin(flutterEvalPlugin); // Enable Flutter widget execution
+
+//       // Step 4: Execute the code and get the widget
+//       final result = runtime.executeLib(
+//         'package:example/main.dart',
+//         'PreviewWidget.',
+//         [$String(argument)], // Pass arguments to the constructor
+//       ) as $Value;
+
+//       previewWidget = result.$value as Widget;
+//     } catch (e) {
+//       previewWidget = null;
+//       print('ERROR => $e');
+//     }
+//   }
+// }

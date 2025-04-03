@@ -10,10 +10,12 @@ import 'package:flutter/services.dart';
 class RespAnalyser extends StatefulWidget {
   final String semanticAnalysis;
   final String intermediateRepresentation;
+  final String apiResponse;
   const RespAnalyser({
     super.key,
     required this.semanticAnalysis,
     required this.intermediateRepresentation,
+    required this.apiResponse,
   });
 
   @override
@@ -163,7 +165,11 @@ class _RespAnalyserState extends State<RespAnalyser> {
     final componentGenBot = ComponentGenBot();
     final ans = await APIDashAIService.callAgent(
       componentGenBot,
-      "SEMANTIC ANALYSIS: ```${widget.semanticAnalysis}```\n\nINTERMEDIATE REPRESENTATION: ```${widget.intermediateRepresentation}```",
+      variables: {
+        'VAR_RAW_API_RESPONSE': widget.apiResponse,
+        'VAR_INTERMEDIATE_REPR': widget.intermediateRepresentation,
+        'VAR_SEMANTIC_ANALYSIS': widget.semanticAnalysis,
+      },
     );
     setState(() {
       loading = false;

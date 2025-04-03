@@ -121,11 +121,11 @@ class _HomepageState extends State<Homepage> {
     Future.wait([
       APIDashAIService.callAgent(
         responseSemanticAnalyserBot,
-        _jsonController.value.text,
+        query: _jsonController.value.text,
       ),
       APIDashAIService.callAgent(
         responseIRGenBot,
-        _jsonController.value.text,
+        query: _jsonController.value.text,
       ),
     ]).then((x) {
       final sa = x[0];
@@ -143,6 +143,7 @@ class _HomepageState extends State<Homepage> {
           builder: (context) => RespAnalyser(
             intermediateRepresentation: ir['INTERMEDIATE_REPRESENTATION'],
             semanticAnalysis: sa['SEMANTIC_ANALYSIS'],
+            apiResponse: _jsonController.value.text,
           ),
         ),
       );

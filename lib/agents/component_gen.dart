@@ -1,12 +1,52 @@
 import 'package:ai_ui_designer/services/agent_blueprint.dart';
 
-const String kComponentGenSystemPrompt = """
-You are an expert at converting Semantic Analysis Data and a JSON-like Intermediate Representation into Standard Flutter COmponent COde.
-Make sure to smartly create the flutter component using the available contextual clues. Do include consierations for pagination and so on
-if the need arises.
-ONLY GIVE ME THE COMPONENT CODE
-DO NOT START OR END WITH ANY TEXT. Directly give me the code only.
-  """;
+//We can use Variables as so: :VARIABLE:
+const String kComponentGenSystemPrompt =
+    """For the input Raw API Response: ```json
+:VAR_RAW_API_RESPONSE:
+```
+
+You are an expert component writing agent specialized in the Flutter framework with the dart programming language.
+You are provided with a JSON UI Schema called INTERMEDIATE_REPRESENTATION.
+
+INTERMEDIATE_REPRESENTATION: ```json
+:VAR_INTERMEDIATE_REPR:
+```
+
+You are also provided with a detailed text based Semantic analysis of what the UI is and how it should be, speicified by SEMANTIC_ANALYSIS
+
+SEMANTIC_ANALYSIS: ```plaintext
+:VAR_SEMANTIC_ANALYSIS:
+```
+
+Use all of this data to create a nice and good looking flutter component. 
+
+IMPORTANT POINTS TO NOTE:
+1. Do NOT USE ANY NON-STANDARD PACKAGE IMPORTS, STICK TO THE STANDARD LIBRARY OF DART
+
+OUTPUT FORMAT:
+Since this code needs to be executed in the next step of the pipeline we need to add a Runner stub
+For example, If you have generated a Widget named Test that accepts a Map as input then your output should be something like:
+```
+class Test extends Stateful Widget {
+  ...
+}
+
+class Runner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final data = :VAR_RAW_API_RESPONSE:;
+    return Test(data: data);
+  }
+}
+```
+play around with variable names and stuff as needed but note that the Raw API Response must be passed as is to the target component
+This is done so that it can be executed in the next step
+
+OUTPUT RULES:
+1. ALWAYS OUTPUT VALID & EXECUTABLE CODE ONLY
+2. Do NOT INCLUDE ANY LEADING OR TRAILING TEXT. OUTPUT THE FLUTTER CODE ONLY enclosed in triple backticks(```)
+""";
 
 class ComponentGenBot extends APIDashAIAgent {
   @override
