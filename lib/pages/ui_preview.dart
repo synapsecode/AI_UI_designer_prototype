@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:ai_ui_designer/agents/component_gen.dart';
 import 'package:ai_ui_designer/agents/component_modifier.dart';
+import 'package:ai_ui_designer/agents/stac2flutter.dart';
+import 'package:ai_ui_designer/agents/stacmodifier.dart';
 import 'package:ai_ui_designer/extensions/miscextensions.dart';
 import 'package:ai_ui_designer/extensions/textextensions.dart';
 import 'package:ai_ui_designer/home.dart';
@@ -42,6 +44,7 @@ class _UIPreviewerState extends State<UIPreviewer> {
   double panelWidthRatio = 0.5;
   bool loading = false;
   bool buildingUI = false;
+  bool exportLoading = false;
 
   String generatedCode = "";
 
@@ -132,23 +135,25 @@ class _UIPreviewerState extends State<UIPreviewer> {
                         Row(
                           children: [
                             Text(
-                              "Generated Code",
+                              "Generated SDUI",
                               style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16),
                             ),
                             Spacer(),
-                            IconButton(
-                              icon: Icon(Icons.copy, color: Colors.white),
-                              onPressed: () {
-                                Clipboard.setData(
-                                    ClipboardData(text: widget.generatedCode));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text("Copied to clipboard!")));
-                              },
-                            ),
+                            if (exportLoading) ...[
+                              CircularProgressIndicator(
+                                strokeWidth: 1,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              )
+                            ] else ...[
+                              IconButton(
+                                icon: Icon(Icons.copy, color: Colors.white),
+                                onPressed: exportCode,
+                              ),
+                            ],
                           ],
                         ),
                         SizedBox(height: 10),
@@ -220,6 +225,23 @@ class _UIPreviewerState extends State<UIPreviewer> {
     );
   }
 
+  exportCode() async {
+    setState(() {
+      exportLoading = true;
+    });
+    final stac2FlutterBot = StacToFlutterBot();
+    final ans = await APIDashAIService.callAgent(stac2FlutterBot, variables: {
+      'VAR_CODE': generatedCode,
+    });
+    setState(() {
+      exportLoading = false;
+    });
+
+    Clipboard.setData(ClipboardData(text: ans['CODE']));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text("Copied to clipboard!")));
+  }
+
   // buildUI() async {
   //   setState(() {
   //     buildingUI = true;
@@ -253,17 +275,16 @@ class _UIPreviewerState extends State<UIPreviewer> {
     setState(() {
       loading = true;
     });
-    final componentModifierBot = ComponentModifierBot();
-    final ans = await APIDashAIService.callAgent(
-      componentModifierBot,
-      query:
-          "ORIGINAL CODE: ```${widget.generatedCode}```\n\nMODIFICATIONS REQUESTED: ```${modificationC.value.text}```",
-    );
+    final slacModifierBot = SlacModifierBot();
+    final ans = await APIDashAIService.callAgent(slacModifierBot, variables: {
+      'VAR_CODE': generatedCode,
+      'VAR_CLIENT_REQUEST': modificationC.value.text,
+    });
     setState(() {
       loading = false;
     });
     setState(() {
-      generatedCode = ans['MODIFIED_CODE'];
+      generatedCode = ans['STAC'];
     });
     // Future.delayed(Duration(milliseconds: 100), () {
     //   buildUI();
