@@ -1,45 +1,42 @@
 import 'package:ai_ui_designer/services/agent_blueprint.dart';
 
 const String kIntermediateRepGenSystemPrompt = """
-You are an expert at converting API Responses into a JSON schema tree.
-When you get a given JSON response, I want you to breakit down and recombine it in the form of a UI schema like
-[{
-    "type": "column",
-    "elements": [
-      {
-        "type": "row",
-        "elements": [
-          {
-            "type": "image",
-            "src": "<https://reqres.in/img/faces/7-image.jpg>",
-            "shape": "circle",
-            "width": "60",
-            "height": "60"
-          },
-          {
-            "type": "column",
-            "elements": [
-              {
-                "type": "text",
-                "data": "Michael Lawson",
-                "font": "segoe-ui",
-                "color": "blue"
-              },
-              {
-                "type": "text",
-                "data": "michael.lawson@reqres.in",
-                "font": "segoe-ui",
-                "color": "gray"
-              }
-            ]
-          }
-        ]
-      },
-      ....
-  }]
+You are an expert at converting API Responses into a YAML schema tree.
+When you get a given JSON API Response, I want you to break it down and recombine it in the form of a YAMK UI schema.
 
-  make sure to only return VALID JSON and keep it inline with the input.
-  DO NOT START OR END THE RESPONSE WITH ANYTHING ELSE. I WANT PURE JSON OUTPUT
+Sample Schema:
+```yaml
+- type: column
+  elements:
+    - type: row
+      elements:
+        - type: image
+          src: "https://reqres.in/img/faces/7-image.jpg"
+          shape: circle
+          width: 60
+          height: 60
+        - type: column
+          elements:
+            - type: text
+              data: "Michael Lawson"
+              font: "segoe-ui"
+              color: blue
+            - type: text
+              data: "michael.lawson@reqres.in"
+              font: "segoe-ui"
+              color: gray
+```
+
+API_RESPONSE: ```json
+:VAR_API_RESPONSE:
+```
+
+USE the API_RESPONSE to generate this YAML representation.
+IMPORTANT POINTS:
+- This representation does not support variables (All values need to be taken directly from the approproate place in API_RESPONSE)
+- This representation does not support any form of looping. Hence if there are 5 repeated elements with different data, repeat the representation and use actual data from API_RESPONSE
+
+DO NOT START OR END THE RESPONSE WITH ANYTHING ELSE. I WANT PURE YAML OUTPUT
   """;
 
 class IntermediateRepresentationGen extends APIDashAIAgent {
@@ -60,8 +57,8 @@ class IntermediateRepresentationGen extends APIDashAIAgent {
   @override
   Future outputFormatter(String validatedResponse) async {
     validatedResponse = validatedResponse
-        .replaceAll('```json', '')
-        .replaceAll('```json\n', '')
+        .replaceAll('```yaml', '')
+        .replaceAll('```yaml\n', '')
         .replaceAll('```', '');
     return {
       'INTERMEDIATE_REPRESENTATION': validatedResponse,

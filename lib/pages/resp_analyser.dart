@@ -1,4 +1,5 @@
 import 'package:ai_ui_designer/agents/component_gen.dart';
+import 'package:ai_ui_designer/agents/stacgen.dart';
 import 'package:ai_ui_designer/extensions/miscextensions.dart';
 import 'package:ai_ui_designer/extensions/textextensions.dart';
 import 'package:ai_ui_designer/home.dart';
@@ -162,22 +163,33 @@ class _RespAnalyserState extends State<RespAnalyser> {
     setState(() {
       loading = true;
     });
-    final componentGenBot = ComponentGenBot();
+    // final componentGenBot = ComponentGenBot();
+    // final ans = await APIDashAIService.callAgent(
+    //   componentGenBot,
+    //   variables: {
+    //     'VAR_RAW_API_RESPONSE': widget.apiResponse,
+    //     'VAR_INTERMEDIATE_REPR': widget.intermediateRepresentation,
+    //     'VAR_SEMANTIC_ANALYSIS': widget.semanticAnalysis,
+    //   },
+    // );
+
+    final stacGenBot = StacGenBot();
     final ans = await APIDashAIService.callAgent(
-      componentGenBot,
+      stacGenBot,
       variables: {
         'VAR_RAW_API_RESPONSE': widget.apiResponse,
         'VAR_INTERMEDIATE_REPR': widget.intermediateRepresentation,
         'VAR_SEMANTIC_ANALYSIS': widget.semanticAnalysis,
       },
     );
+
     setState(() {
       loading = false;
     });
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => UIPreviewer(
-          generatedCode: ans['COMPONENT_CODE'],
+          generatedCode: ans['STAC'],
         ),
       ),
     );

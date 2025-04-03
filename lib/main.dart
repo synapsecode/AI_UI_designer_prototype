@@ -1,7 +1,9 @@
 import 'package:ai_ui_designer/home.dart';
 import 'package:flutter/material.dart';
+import 'package:stac/stac.dart' as stac;
 
-void main() {
+void main() async {
+  await stac.Stac.initialize();
   runApp(const AIUIDesignerPrototype());
 }
 

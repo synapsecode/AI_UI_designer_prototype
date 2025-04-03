@@ -9,6 +9,22 @@ import 'package:ai_ui_designer/services/apidash_ai_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:stac/stac.dart' as stac;
+
+class StacRenderer extends StatelessWidget {
+  final String stacRepresentation;
+  const StacRenderer({super.key, required this.stacRepresentation});
+
+  @override
+  Widget build(BuildContext context) {
+    return stac.StacApp(
+      title: 'Component Preview',
+      homeBuilder: (context) => Material(
+        child: stac.Stac.fromJson(jsonDecode(stacRepresentation), context),
+      ),
+    );
+  }
+}
 
 class UIPreviewer extends StatefulWidget {
   final String generatedCode;
@@ -35,9 +51,9 @@ class _UIPreviewerState extends State<UIPreviewer> {
   void initState() {
     super.initState();
     generatedCode = widget.generatedCode;
-    Future.delayed(Duration(milliseconds: 200), () {
-      buildUI();
-    });
+    // Future.delayed(Duration(milliseconds: 200), () {
+    //   buildUI();
+    // });
   }
 
   @override
@@ -78,8 +94,11 @@ class _UIPreviewerState extends State<UIPreviewer> {
                                   Text('Re-Building UI').color(Colors.white54)
                                 ],
                               ).center()
-                            ] else
-                              ...[],
+                            ] else ...[
+                              StacRenderer(
+                                stacRepresentation: generatedCode,
+                              ),
+                            ],
                           ],
                         ).expanded()
                       ],
@@ -201,34 +220,34 @@ class _UIPreviewerState extends State<UIPreviewer> {
     );
   }
 
-  buildUI() async {
-    setState(() {
-      buildingUI = true;
-    });
+  // buildUI() async {
+  //   setState(() {
+  //     buildingUI = true;
+  //   });
 
-    final res = await http.post(
-      Uri.parse('http://127.0.0.1:5152/build'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'code': base64.encode(utf8.encode(generatedCode))}),
-    );
-    setState(() {
-      buildingUI = false;
-    });
-    if (res.statusCode == 200) {
-      Future.delayed(Duration(milliseconds: 400), () {
-        for (int i = 0; i < 5; i++) {
-          setState(() {
-            webViewKey = Random().nextInt(499999999).toString();
-          });
-        }
-      });
-    } else {
-      print("BUILD_FAILED");
-      return;
-    }
-  }
+  //   final res = await http.post(
+  //     Uri.parse('http://127.0.0.1:5152/build'),
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //     body: jsonEncode({'code': base64.encode(utf8.encode(generatedCode))}),
+  //   );
+  //   setState(() {
+  //     buildingUI = false;
+  //   });
+  //   if (res.statusCode == 200) {
+  //     Future.delayed(Duration(milliseconds: 400), () {
+  //       for (int i = 0; i < 5; i++) {
+  //         setState(() {
+  //           webViewKey = Random().nextInt(499999999).toString();
+  //         });
+  //       }
+  //     });
+  //   } else {
+  //     print("BUILD_FAILED");
+  //     return;
+  //   }
+  // }
 
   process() async {
     setState(() {
@@ -246,8 +265,8 @@ class _UIPreviewerState extends State<UIPreviewer> {
     setState(() {
       generatedCode = ans['MODIFIED_CODE'];
     });
-    Future.delayed(Duration(milliseconds: 100), () {
-      buildUI();
-    });
+    // Future.delayed(Duration(milliseconds: 100), () {
+    //   buildUI();
+    // });
   }
 }

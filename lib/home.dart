@@ -138,10 +138,9 @@ class _HomepageState extends State<Homepage> {
         responseSemanticAnalyserBot,
         query: _jsonController.value.text,
       ),
-      APIDashAIService.callAgent(
-        responseIRGenBot,
-        query: _jsonController.value.text,
-      ),
+      APIDashAIService.callAgent(responseIRGenBot, variables: {
+        'VAR_API_RESPONSE': _jsonController.value.text,
+      }),
     ]).then((x) {
       final sa = x[0];
       final ir = x[1];
